@@ -49,6 +49,10 @@ npm install
 VITE_STRIPE_API_KEY=pk_test_51Kx6IaSH2pwWq5CIF167qhnxysBecpjrZsiauu0AsmRBlS3Ly8xPf5ayczN2qI9Br6fvBZWtFe97qt1afEgLIM9b00rE42YiKy
 VITE_BACKEND_BASE_URL=http://localhost:8000
 ```
+4. Run the development server:
+```bash
+npm run dev
+```
 This will start the client application on http://localhost:5173.
 
 ### Features
