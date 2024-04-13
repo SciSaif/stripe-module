@@ -25,7 +25,7 @@ npm install
 ```
 4. Set the Stripe secret key in your environment variables or create a .env file in the root of the project with the following content:
 ```bash
-STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_SECRET_KEY=sk_test_51Kx6IaSH2pwWq5CIXubtAeod5wA3M9aprS7E1tbyayAozKJdyJDW0tcfwk2UZYN2rAOJwjfiCvlpRzInl8CH5ahM00nOlPhiQt
 ```
 5.Start the development server:
 ```bash
@@ -46,8 +46,12 @@ npm install
 ```
 3. Set the Stripe API key in your environment variables or create a .env file in the root of the project with the following content:
 ```bash
-VITE_STRIPE_API_KEY=your_key
+VITE_STRIPE_API_KEY=pk_test_51Kx6IaSH2pwWq5CIF167qhnxysBecpjrZsiauu0AsmRBlS3Ly8xPf5ayczN2qI9Br6fvBZWtFe97qt1afEgLIM9b00rE42YiKy
 VITE_BACKEND_BASE_URL=http://localhost:8000
+```
+4. Run the development server:
+```bash
+npm run dev
 ```
 This will start the client application on http://localhost:5173.
 
