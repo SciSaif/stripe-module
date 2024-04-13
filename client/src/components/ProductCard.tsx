@@ -2,11 +2,19 @@ interface Props {
     img: string;
     title: string;
     price: number;
+    priceUSD: number;
     onClick?: () => void;
     noList?: boolean;
 }
 
-const ProductCard = ({ img, title, price, onClick, noList }: Props) => {
+const ProductCard = ({
+    img,
+    title,
+    price,
+    priceUSD,
+    onClick,
+    noList,
+}: Props) => {
     const card = (
         <a
             href={"#buy"}
@@ -27,7 +35,7 @@ const ProductCard = ({ img, title, price, onClick, noList }: Props) => {
                     <span className="sr-only"> Regular Price </span>
 
                     <span className="tracking-wider text-gray-900">
-                        ₹ {price}
+                        ₹ {price} | ${priceUSD}
                     </span>
                 </p>
             </div>

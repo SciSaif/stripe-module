@@ -5,47 +5,18 @@ import { Button } from "@/components/ui/button";
 import CheckoutForm from "@/components/CheckoutForm";
 import Loader from "@/components/Loader";
 import ProductCard from "@/components/ProductCard";
-
+import Products from "@/lib/products";
+import { useNavigate } from "react-router-dom";
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API_KEY);
-
-const Products = [
-    {
-        id: 1,
-        img: "https://fullyfilmy.in/cdn/shop/products/New-Mockups---no-hanger---TShirt-Yellow.jpg?v=1639657077",
-        title: "Basic Tee",
-        price: 600.0,
-    },
-    {
-        id: 2,
-        img: "https://5.imimg.com/data5/WZ/AX/PV/SELLER-3300497/plain-t-shirt.jpeg",
-        title: "Bright Red",
-        price: 800.0,
-    },
-    {
-        id: 3,
-        img: "https://superbikestore.in/cdn/shop/products/Realistic-Tshirt-Mockup_1024x1024_aa65700b-8f0d-4525-b6b5-7d0613464978.png?v=1574760933",
-        title: "Be Yourself",
-        price: 900.0,
-    },
-    {
-        id: 4,
-        img: "https://image.made-in-china.com/202f0j00tmOiFIHlkcrw/Black-Quick-Drying-160g-Sport-Tshirt-Polyester-Printing-T-Shirt-Custom-Clothing-Customized-Work-Wear.webp",
-        title: "Cool Black",
-        price: 650.0,
-    },
-    {
-        id: 5,
-        img: "https://contents.mediadecathlon.com/p1962600/294de5e4093cf3fc92fafdb60f7c1bf4/p1962600.jpg?format=auto&quality=70&f=650x0",
-        title: "Red Grass",
-        price: 1250.0,
-    },
-];
+const baseURL = import.meta.env.VITE_BACKEND_BASE_URL;
 
 const Home = () => {
     const [clientSecret, setClientSecret] = useState("");
+    const navigate = useNavigate();
+    const [payingThroughPaypal, setPayingThroughPaypal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<number>();
-    const createPaymentIntent = async () => {
+    const payWithStripe = async () => {
         const selectedProduct = Products.find(
             (product) => product.id === selectedProductId
         );
@@ -54,7 +25,6 @@ const Home = () => {
         }
         setIsLoading(true);
         // Create PaymentIntent as soon as the page loads
-        const baseURL = import.meta.env.VITE_BACKEND_BASE_URL;
         fetch(`${baseURL}/stripe/payment-intent`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -68,6 +38,110 @@ const Home = () => {
                 setClientSecret(data.clientSecret);
                 setIsLoading(false);
             });
+    };
+
+    const payWithPaypal = async () => {
+        const selectedProduct = Products.find(
+            (product) => product.id === selectedProductId
+        );
+        if (!selectedProduct) {
+            return;
+        }
+        setPayingThroughPaypal(true);
+        // @ts-ignore
+        window.paypal
+            .Buttons({
+                async createOrder() {
+                    try {
+                        const response = await fetch(
+                            `${baseURL}/paypal/payment-intent`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                // use the "body" param to optionally pass additional order information
+                                // like product ids and quantities
+                                body: JSON.stringify({
+                                    amount: selectedProduct.priceUSD,
+                                    currency: "USD",
+                                }),
+                            }
+                        );
+
+                        let orderData = await response.json();
+                        console.log(orderData);
+                        orderData = orderData.jsonResponse;
+
+                        if (orderData.id) {
+                            return orderData.id;
+                        } else {
+                            const errorDetail = orderData?.details?.[0];
+                            const errorMessage = errorDetail
+                                ? `${errorDetail.issue} ${errorDetail.description} (${orderData.debug_id})`
+                                : JSON.stringify(orderData);
+
+                            throw new Error(errorMessage);
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        // resultMessage(`Could not initiate PayPal Checkout...<br><br>${error}`);
+                    }
+                },
+                async onApprove(data: any, actions: any) {
+                    try {
+                        const response = await fetch(
+                            `${baseURL}/paypal/capture`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                    orderID: data.orderID,
+                                }),
+                            }
+                        );
+
+                        let orderData = await response.json();
+                        console.log(orderData);
+                        orderData = orderData.jsonResponse;
+                        const errorDetail = orderData?.details?.[0];
+
+                        if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
+                            return actions.restart();
+                        } else if (errorDetail) {
+                            throw new Error(
+                                `${errorDetail.description} (${orderData.debug_id})`
+                            );
+                        } else if (!orderData.purchase_units) {
+                            throw new Error(JSON.stringify(orderData));
+                        } else {
+                            // (3) Successful transaction -> Show confirmation or thank you message
+                            // Or go to another URL:  actions.redirect('thank_you.html');
+                            // const transaction =
+                            //     orderData?.purchase_units?.[0]?.payments
+                            //         ?.captures?.[0] ||
+                            //     orderData?.purchase_units?.[0]?.payments
+                            //         ?.authorizations?.[0];
+
+                            console.log(
+                                "Capture result",
+                                orderData,
+                                JSON.stringify(orderData, null, 2)
+                            );
+
+                            navigate("/success");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        // resultMessage(
+                        //   \`Sorry, your transaction could not be processed...<br><br>\${error}\`,
+                        // );
+                    }
+                },
+            })
+            .render("#paypal-button-container");
     };
 
     const appearance = {
@@ -85,7 +159,7 @@ const Home = () => {
     return (
         <div className="flex flex-col items-center justify-center flex-grow gap-4 mb-10">
             <div id="buy">
-                {selectedProduct && !clientSecret && (
+                {selectedProduct && !clientSecret && !payingThroughPaypal && (
                     <div className="flex items-center max-w-screen-xl min-h-screen px-4 py-8 mx-auto sm:px-6 sm:py-12 lg:px-8">
                         <div>
                             <h2 className="text-xl font-bold text-gray-900 sm:text-3xl">
@@ -96,14 +170,27 @@ const Home = () => {
                                 img={selectedProduct.img}
                                 title={selectedProduct.title}
                                 price={selectedProduct.price}
+                                priceUSD={selectedProduct.priceUSD}
                                 noList
                             />
 
                             <Button
-                                onClick={createPaymentIntent}
+                                onClick={payWithStripe}
                                 className="w-full mt-2 "
                             >
-                                {isLoading ? "Loading..." : "Buy Now"}
+                                {isLoading ? "Loading..." : "Pay with Stripe"}
+                                {isLoading && (
+                                    <Loader
+                                        size={6}
+                                        className="ml-2 border-white"
+                                    />
+                                )}
+                            </Button>
+                            <Button
+                                onClick={payWithPaypal}
+                                className="w-full mt-2 "
+                            >
+                                {isLoading ? "Loading..." : "Pay with Paypal"}
                                 {isLoading && (
                                     <Loader
                                         size={6}
@@ -116,7 +203,7 @@ const Home = () => {
                 )}
             </div>
 
-            {!clientSecret && (
+            {!clientSecret && !payingThroughPaypal && (
                 <section>
                     <div className="max-w-screen-xl px-4 py-8 mx-auto sm:px-6 sm:py-12 lg:px-8">
                         <header>
@@ -136,6 +223,7 @@ const Home = () => {
                                     img={product.img}
                                     title={product.title}
                                     price={product.price}
+                                    priceUSD={product.priceUSD}
                                     onClick={() =>
                                         setSelectedProductId(product.id)
                                     }
@@ -152,6 +240,7 @@ const Home = () => {
                         img={selectedProduct?.img}
                         title={selectedProduct?.title}
                         price={selectedProduct?.price}
+                        priceUSD={selectedProduct?.priceUSD}
                         noList
                     />
                     <Elements options={options} stripe={stripePromise}>
@@ -159,6 +248,18 @@ const Home = () => {
                     </Elements>
                 </div>
             )}
+            <div className="flex flex-col gap-10 sm:gap-5 sm:flex-row md:gap-20 ">
+                {payingThroughPaypal && selectedProduct && (
+                    <ProductCard
+                        img={selectedProduct?.img}
+                        title={selectedProduct?.title}
+                        price={selectedProduct?.price}
+                        priceUSD={selectedProduct?.priceUSD}
+                        noList
+                    />
+                )}
+                <div id="paypal-button-container"></div>
+            </div>
         </div>
     );
 };
