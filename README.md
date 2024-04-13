@@ -1,6 +1,6 @@
 # Stripe Module
 
-This is a NestJS module that provides a simple and easy-to-use integration with Stripe for processing payments.
+This is a NestJS module that provides a simple and easy-to-use integration with Stripe or Paypal for processing payments.
 
 ## Prerequisites
 
@@ -26,6 +26,8 @@ npm install
 4. Set the Stripe secret key in your environment variables or create a .env file in the root of the project with the following content:
 ```bash
 STRIPE_SECRET_KEY=sk_test_51Kx6IaSH2pwWq5CIXubtAeod5wA3M9aprS7E1tbyayAozKJdyJDW0tcfwk2UZYN2rAOJwjfiCvlpRzInl8CH5ahM00nOlPhiQt
+PAYPAL_CLIENT_ID=AbhtqL5rPnpIv1CZmmWE6_DNQ0AW8c_hO7OSxV2LTICX7wB3UHthHEgSYOlj7xjE7cqIwZbbi-kwehep
+PAYPAL_CLIENT_SECRET=EAM7d2lUPKtIZldwlPEvDvS1D7Jzptj_hAa6JwjMigVAXLu1gPHilPZk88zaXDqt-4htxSHti6KoYifH
 ```
 5.Start the development server:
 ```bash
